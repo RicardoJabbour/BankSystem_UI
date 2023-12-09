@@ -1,0 +1,131 @@
+<mat-toolbar class="toolbarStyle" color="primary">
+  <span>BSBank</span>
+</mat-toolbar>
+
+<div class="container">
+
+  <div class="elementContainer">
+    <h3 style="text-align: center;">Customers</h3>
+
+    <div (click)="SetCustomer(customer)" *ngFor="let customer of customers; let i = index;" class="itemStyle">
+
+      <div class="FLStyle">
+        <span style="margin-right: 5px;">{{customer.firstName}}</span>
+        <span>{{customer.lastName}}</span>
+      </div>
+
+      <div class="emailStyle">{{customer.email}}</div>
+
+    </div>
+  </div>
+
+  <div class="elementContainer">
+    <h3 style="text-align: center;"><span *ngIf="selectedCustomer">{{selectedCustomer.firstName}}'s</span> Accounts</h3>
+
+    <div *ngIf="customerAccounts.length == 0 && createAccount == false">
+      {{selectedCustomer?.firstName}} don't have an account. Create one? 
+
+      <div style="text-align: center;">
+        <button (click)="CreateAccount()" mat-button color="primary">Create Account</button>
+      </div>
+
+    </div>
+
+    <div class="addStyle" *ngIf="customerAccounts.length == 0 && createAccount == true">
+      <h4>Add Account:</h4>
+
+      <mat-form-field class="example-form-field">
+        <mat-label>Initial Credit</mat-label>
+        <input matInput type="number" [(ngModel)]="initialCredit" (keyup)="onKeyUp($event)">
+        @if (initialCredit) {
+          <button matSuffix mat-icon-button aria-label="Clear" (click)="initialCredit = 0">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+      
+      <mat-label>Amount: {{initialCredit}} $</mat-label> 
+      
+      <button mat-button color="primary" (click)="openAccount()" >Add Account</button>
+    </div>
+
+    <div *ngFor="let account of customerAccounts; let i = index" class="itemStyle">
+   
+      <div>
+        <div>AccountId: {{account.accountId}}</div>
+        <div>Balance: {{account.balance}}$</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="elementContainer">
+
+    <h3 style="text-align: center;"><span *ngIf="selectedCustomer">{{selectedCustomer.firstName}}'s</span> Transactions</h3>
+
+    <div *ngIf="customerTransactions.length == 0 && makeTransaction == false">
+      {{selectedCustomer?.firstName}} don't have a transactions. Make one?
+
+      <div style="text-align: center;">
+        <button (click)="MakeTransaction()" mat-button color="primary">Make Transaction</button>
+      </div>
+    </div>
+
+    <div class="addStyle" *ngIf="customerTransactions.length == 0 && makeTransaction == true">
+      <h4>Make Transaction:</h4>
+
+      <mat-form-field>
+        <mat-label>Select Transfer Type</mat-label>
+        <mat-select [(value)]="transactionTypeSelected" (selectionChange)="onTransactionTypeChange()">
+          @for (transactionType of TransactionTypes; track transactionType) {
+            <mat-option [value]="transactionType">{{transactionType | transactionTypeText}}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>From Account</mat-label>
+        <mat-select [(value)]="fromAccount" (selectionChange)="onTransactionTypeChange()">
+          @for (customerAccount of customerAccounts; track customerAccount) {
+            <mat-option [value]="customerAccount.accountId">{{customerAccount.accountId}}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>To Account</mat-label>
+        <mat-select [(value)]="toAccount" [disabled]="toAccountDisabled">
+          @for (account of allAccounts; track account) {
+            <mat-option [value]="account.accountId">{{account.accountId}}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field class="example-form-field">
+        <mat-label>Transaction Amount</mat-label>
+        <input matInput type="number" [(ngModel)]="transactionAmount" [max]="limit" (keyup)="onKeyUp($event)">
+        @if (transactionAmount) {
+          <button matSuffix mat-icon-button aria-label="Clear" (click)="transactionAmount = 0">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+      
+      <mat-label style="color: red;" *ngIf="limit < transactionAmount">Account {{fromAccount}} limit: {{limit}} $</mat-label>
+
+      <button mat-button color="primary" (click)="makeTheTransaction()" >Make The Transaction</button>
+    </div>
+
+    <div *ngFor="let transaction of customerTransactions; let i = index" class="itemStyle">
+      <div>
+        <div>AccountId: {{transaction.accountId}}</div>
+        <div>Transaction Date: {{transaction.transactionDate | date:'HH:mm dd/MM/yyyy' }}</div>
+        <div>Transaction Type: {{transaction.transactionType | transactionTypeText}}</div>
+        <div>Transaction Amount: {{transaction.amount}} $</div>
+      </div>
+    </div>
+
+  </div>
+  
+
+</div>
