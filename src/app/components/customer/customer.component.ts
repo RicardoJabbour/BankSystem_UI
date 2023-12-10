@@ -6,7 +6,7 @@ import { Account } from '../../models/Account';
 import { TransactionService } from '../../services/transaction.service';
 import { Transaction } from '../../models/Transaction';
 import { TransactionType } from '../../enums/TransactionType/TransactionType';
-import { MatSelectChange } from '@angular/material/select';
+import { MatSnackBar, MatSnackBarHorizontalPosition, MatSnackBarVerticalPosition } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-customer',
@@ -19,7 +19,7 @@ export class CustomerComponent implements OnInit {
   customerAccounts: Account[] = [];
   selectedCustomer: Customer | undefined;
   createAccount: boolean = false;
-  initialCredit: number = 0;
+  initialCredit: number = 0; 
   customerTransactions: Transaction[] = [];
   makeTransaction: boolean = false;
   transactionTypeSelected: TransactionType | undefined;
@@ -29,32 +29,56 @@ export class CustomerComponent implements OnInit {
   allAccounts: Account[] = [];
   toAccount: number = -1;
   toAccountDisabled: boolean = true;
-  limit: number = 100;
-
+  limit: number = 10000;
+  minAmount: number = 1;
+  createCustomer: boolean = false;
+  firstName: string = '';
+  lastName: string = '';
+  email: string = '';
+  durationInSeconds = 5;
+  horizontalPosition: MatSnackBarHorizontalPosition = 'start';
+  verticalPosition: MatSnackBarVerticalPosition = 'bottom';
+  verticalPosition1: MatSnackBarVerticalPosition = 'top';
+  
   constructor(
     private customerService: CustomerService,
     private accountService: AccountService,
     private transactionService: TransactionService,
+    private _snackBarErr: MatSnackBar,
     ) { 
 
   }
 
   ngOnInit() {
+     this.GetCustomers();
+  }
+
+  openSnackBarErr(msg: string){
+    this._snackBarErr.open(msg, 'Ok', {
+      horizontalPosition: this.horizontalPosition,
+      verticalPosition: this.verticalPosition1,
+    });
+  }
+
+  GetCustomers(customer?: Customer){
     this.customerService.getAllCustomers().subscribe({
       next: (customers: Customer[]) => {
         this.customers.push(...customers);
         if (this.customers.length > 0) {
-          this.selectedCustomer = this.customers[0];
-          this.GetCustomerAcounts(this.customers[0].customerId);
+           this.selectedCustomer = customer ? customer : this.customers[0];
+          this.GetCustomerInfo(this.selectedCustomer.customerId);
         }
       },
       error: (err) => {
-        console.log(err);
+        console.log(err.error);
+        this.openSnackBarErr(err.error);
+        this.Reset();
+        this.GetCustomers();
       },
       complete: () => {
-        
+
       },
-    });    
+    });  
   }
 
   onKeyUp(event: KeyboardEvent) {
@@ -62,6 +86,44 @@ export class CustomerComponent implements OnInit {
     if (input.value.startsWith('0') && input.value.length > 1) {
       input.value = input.value.slice(1);
     }
+  }
+
+  GetCustomerInfo(customerId : number){
+    this.customerService.getCustomerInfo(customerId).subscribe({
+      next: (customerInfo: Customer) =>{
+        this.customerAccounts = [];
+        this.customerTransactions = [];
+
+        if (customerInfo && customerInfo.accounts && customerInfo.accounts?.length > 0) {
+          this.customerAccounts.push(...customerInfo.accounts);
+
+          customerInfo.accounts.forEach(x =>{
+
+          if(x.transactions)
+            this.customerTransactions.push(...x.transactions);
+        });
+
+        this.customerTransactions.sort((a, b) => {
+          const dateA = new Date(a.transactionDate).getTime();
+          const dateB = new Date(b.transactionDate).getTime();
+        
+          return dateA - dateB;
+        });
+
+      }
+
+      },
+      error: (err: any) =>{
+        console.log(err.error);
+        this.Reset();
+        this.openSnackBarErr(err.error);
+        this.GetCustomers();
+      },
+      complete: () =>{
+
+      }
+    })
+
   }
 
   GetCustomerAcounts(customerId: number){
@@ -75,7 +137,10 @@ export class CustomerComponent implements OnInit {
         }
       },
       error: (err) => {
-        console.log(err);
+        console.log(err.error);
+        this.openSnackBarErr(err.error);
+        this.Reset();
+        this.GetCustomers();
       },
       complete: () => {
 
@@ -90,7 +155,10 @@ export class CustomerComponent implements OnInit {
           this.customerTransactions.push(...response);
         },
         error: (err) => {
-          console.log(err);
+          console.log(err.error);
+          this.openSnackBarErr(err.error);
+          this.Reset();
+          this.GetCustomers();
         },
         complete: () => {
           
@@ -98,11 +166,14 @@ export class CustomerComponent implements OnInit {
       }); 
   }
 
-  CreateAccount(){
-    this.createAccount = true;
-  }
-
   openAccount(){
+
+    if(this.initialCredit  < 0 ){
+      this.initialCredit = 0;
+      this.openSnackBarErr("Initial credit should be 0$ or greater than 0$.");
+      return;
+    }
+
     const account: Account = {
       accountId: 0, 
       customerId: this.selectedCustomer?.customerId ? this.selectedCustomer?.customerId : -1 , 
@@ -113,14 +184,19 @@ export class CustomerComponent implements OnInit {
 
     this.accountService.openAccount(account).subscribe({
       next: (response) => {
-        
+        console.log(response);
       },
       error: err =>{
-        console.log(err);
+        console.log(err.error);
+        this.openSnackBarErr(err.error);
+        this.Reset();
+        this.GetCustomers();
       },
       complete: () => {
         this.createAccount = false;
-        
+        this.customerAccounts = [];
+        this.customerTransactions = [];
+        this.initialCredit = 0;
         this.GetCustomerAcounts(this.selectedCustomer?.customerId ? this.selectedCustomer?.customerId : -1);
       },
     });
@@ -133,7 +209,10 @@ export class CustomerComponent implements OnInit {
           this.allAccounts.push(...allAccounts);
         },
         error: (err) => {
-          console.log(err);
+          console.log(err.error);
+          this.openSnackBarErr(err.error);
+          this.Reset();
+          this.GetCustomers();
         },
         complete: () => {
           this.toAccountDisabled = false;
@@ -150,8 +229,11 @@ export class CustomerComponent implements OnInit {
         next: (limit: number) => {
           this.limit = limit;
         },
-        error: (err) => {
-          console.log(err);
+        error: (err: any) => {
+          console.log(err.error);
+          this.openSnackBarErr(err.error);
+          this.Reset();
+          this.GetCustomers();
         },
         complete: () => {
           this.toAccountDisabled = false;
@@ -163,24 +245,119 @@ export class CustomerComponent implements OnInit {
   }
   
   makeTheTransaction(){
-    console.log(this.transactionTypeSelected);
-    console.log(this.transactionAmount);
-    console.log(this.fromAccount);
-    console.log(this.toAccount);
+    var transactions: Transaction[] = [];
+    var transactionFrom: Transaction;
+    var transactionTo: Transaction;
+    var account = undefined;
+
+    if(this.transactionAmount == 0){
+      this.openSnackBarErr("The transaction amount can't be 0$");
+      return;
+    }
+
+    if(this.transactionTypeSelected == TransactionType.Deposit || this.transactionTypeSelected == TransactionType.Withdraw){
+
+      transactionFrom = {
+        transactionId: 0,
+        accountId: this.fromAccount,
+        amount: this.transactionAmount,
+        transactionDate: new Date(),
+        transactionType: this.transactionTypeSelected,
+        account: account
+      };
+
+      transactions.push(transactionFrom);
+
+    }else if(this.transactionTypeSelected == TransactionType.Transfer){
+
+      transactionFrom = {
+        transactionId: 0,
+        accountId: this.fromAccount,
+        amount: this.transactionAmount,
+        transactionDate: new Date(),
+        transactionType: this.transactionTypeSelected,
+        account: account
+      };
+
+      transactions.push(transactionFrom);
+
+      transactionTo = {
+        transactionId: 0,
+        accountId: this.toAccount,
+        amount: this.transactionAmount,
+        transactionDate: new Date(),
+        transactionType: TransactionType.Deposit,
+        account: account
+      }
+
+      transactions.push(transactionTo);
+
+    }
+
+    if(transactions.length > 0){
+      this.transactionService.makeTransaction(transactions).subscribe({
+        next: (res: any) => {
+          console.log(res);
+        },
+        error: (err: any) =>{
+          console.log(err.error);
+          this.openSnackBarErr(err.error);
+          this.Reset();
+          this.GetCustomers(this.selectedCustomer);
+        },
+        complete: () =>{
+          this.Reset();          
+          this.GetCustomers(this.selectedCustomer);
+        }
+      });
+    }
   }
 
   SetCustomer(customer: Customer){
     this.selectedCustomer = customer;
+    this.GetCustomerInfo(customer.customerId);
+  }
+
+  Reset(){
     this.customerAccounts = [];
     this.customerTransactions = [];
     this.makeTransaction = false;
     this.createAccount = false;
-    
-    this.GetCustomerAcounts(customer.customerId);
+    this.initialCredit = 0;
+    this.createCustomer = false;
+    this.transactionAmount = 0;
+    this.toAccount = -1;
+    this.fromAccount = -1;
+    this.transactionTypeSelected = undefined;
+    this.customers = [];
+    this.firstName = "";
+    this.lastName = "";
+    this.email = "";
   }
 
-  MakeTransaction(){
-    this.makeTransaction = true;
+  AddCustomer(){
+    var customer: Customer ={
+      firstName: this.firstName,
+      lastName: this.lastName,
+      email: this.email,
+      customerId: 0,
+    };
+    
+    this.customerService.createCustomer(customer).subscribe({
+      next: (res: any)=> {
+        console.log(res);
+      },
+      error: (err: any)=> {
+        this.Reset();
+        this.GetCustomers();
+        this.openSnackBarErr(err.error);
+      
+      },
+      complete: ()=> {
+        this.Reset();
+        this.GetCustomers();
+      }
+    })
   }
 
 }

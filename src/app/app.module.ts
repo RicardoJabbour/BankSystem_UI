@@ -16,11 +16,14 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 import { TransactionService } from './services/transaction.service';
 import { TransactionTypeTextPipe } from './pipes/transactionTypePipe';
 import { MatSelectModule } from '@angular/material/select';
+import {MatSnackBarModule} from '@angular/material/snack-bar';
+import { NumberOnlyDirective } from './directives/positiveNumbers';
 
 @NgModule({
   declarations: [
     CustomerComponent,
     TransactionTypeTextPipe,
+    NumberOnlyDirective
   ],
   imports: [
     RouterModule.forChild(routes),
@@ -33,6 +36,7 @@ import { MatSelectModule } from '@angular/material/select';
     FormsModule,
     MatSelectModule,
     HttpClientModule,
+    MatSnackBarModule
   ],
   providers: [
     CustomerService,

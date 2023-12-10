@@ -6,6 +6,6 @@ export interface Transaction {
     transactionDate: Date;
     accountId: number;
     amount: number;
-    account?: Account; // Optional reference to AccountDTO
+    account?: Account; 
     transactionType: TransactionType;
   }

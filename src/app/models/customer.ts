@@ -5,5 +5,5 @@ export interface Customer {
     firstName: string;
     lastName: string;
     email: string;
-    accounts?: Account[]; // Optional array of AccountDTOs
+    accounts?: Account[];
   }

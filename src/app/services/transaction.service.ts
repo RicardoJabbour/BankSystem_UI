@@ -16,4 +16,9 @@ getTransactionsByCustomerId(customerId: number) {
   return this.http.get<Transaction[]>(`${this.baseUrl}`+"/GetTransactionsByCustomerId?customerId="+`${customerId}`);
 }
 
+makeTransaction(transactions: Transaction[]): Observable<any> {
+  const url = `${this.baseUrl}/MakeTransaction`;
+  return this.http.post<any>(url, transactions);
+}
+
 }
